@@ -1,1 +1,10 @@
 project_id = "aqyqwfdxxiuzvjrpuphl"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.summarize]
+verify_jwt = false
+
+[functions.generate-quiz]
+verify_jwt = false
