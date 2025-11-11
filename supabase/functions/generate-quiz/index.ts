@@ -22,26 +22,7 @@ serve(async (req) => {
 
 Here are the notes:
 
-${noteContent}
-
-CRITICAL RULES:
-- Generate questions ONLY from the content above
-- Each question must have exactly 4 options
-- Mark which option is correct
-- Identify the topic for each question (for weak topic detection)
-- Return your response as a valid JSON array
-
-Format your response EXACTLY like this example:
-{
-  "questions": [
-    {
-      "question": "What is the capital of France?",
-      "options": ["London", "Paris", "Berlin", "Madrid"],
-      "correct_answer": "Paris",
-      "topic": "Geography"
-    }
-  ]
-}`;
+${noteContent}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -53,8 +34,52 @@ Format your response EXACTLY like this example:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Generate the quiz questions now in JSON format.' }
+          { role: 'user', content: 'Generate 5 quiz questions based on these notes.' }
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "create_quiz",
+              description: "Generate quiz questions from the provided notes",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { 
+                          type: "string",
+                          description: "The quiz question text"
+                        },
+                        options: { 
+                          type: "array",
+                          items: { type: "string" },
+                          description: "Exactly 4 answer options"
+                        },
+                        correct_answer: { 
+                          type: "string",
+                          description: "The correct answer (must match one of the options exactly)"
+                        },
+                        topic: { 
+                          type: "string",
+                          description: "The topic/subject area this question covers"
+                        }
+                      },
+                      required: ["question", "options", "correct_answer", "topic"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["questions"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "create_quiz" } }
       }),
     });
 
@@ -68,12 +93,17 @@ Format your response EXACTLY like this example:
     }
 
     const data = await response.json();
-    let content = data.choices[0].message.content;
-
-    // Clean up the response to extract JSON
-    content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const toolCall = data.choices[0].message.tool_calls?.[0];
     
-    const quizData = JSON.parse(content);
+    if (!toolCall || !toolCall.function.arguments) {
+      console.error('No tool call found in response');
+      return new Response(JSON.stringify({ error: 'Failed to generate quiz' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const quizData = JSON.parse(toolCall.function.arguments);
 
     return new Response(JSON.stringify(quizData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
