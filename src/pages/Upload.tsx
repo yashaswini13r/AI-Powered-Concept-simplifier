@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Upload as UploadIcon, FileText } from "lucide-react";
 import { Session, User } from "@supabase/supabase-js";
+import { extractTextFromFile } from "@/utils/textExtractor";
 
 const Upload = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -16,6 +17,7 @@ const Upload = () => {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [extractingText, setExtractingText] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,8 +69,24 @@ const Upload = () => {
     if (!file || !user) return;
 
     setUploading(true);
+    setExtractingText(true);
 
     try {
+      // Extract text from file
+      let extractedText = '';
+      try {
+        extractedText = await extractTextFromFile(file);
+        console.log('Text extracted successfully, length:', extractedText.length);
+      } catch (extractError) {
+        console.error('Text extraction error:', extractError);
+        toast({
+          title: "Warning",
+          description: "Could not extract text from file, but file will be uploaded",
+        });
+      }
+      
+      setExtractingText(false);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -86,13 +104,14 @@ const Upload = () => {
           file_path: fileName,
           file_type: file.type,
           subject: subject || null,
+          content: extractedText || null,
         }]);
 
       if (dbError) throw dbError;
 
       toast({
         title: "Success!",
-        description: "Your notes have been uploaded successfully",
+        description: "Your notes have been uploaded and text extracted successfully",
       });
 
       navigate('/dashboard');
@@ -105,6 +124,7 @@ const Upload = () => {
       });
     } finally {
       setUploading(false);
+      setExtractingText(false);
     }
   };
 
@@ -182,8 +202,14 @@ const Upload = () => {
               className="w-full"
               size="lg"
             >
-              {uploading ? "Uploading..." : "Upload Notes"}
+              {extractingText ? "Extracting text..." : uploading ? "Uploading..." : "Upload Notes"}
             </Button>
+            
+            {extractingText && (
+              <p className="text-sm text-muted-foreground text-center">
+                Extracting text from your file for AI features...
+              </p>
+            )}
           </CardContent>
         </Card>
       </main>
