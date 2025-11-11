@@ -93,6 +93,13 @@ const Dashboard = () => {
       color: "bg-primary",
     },
     {
+      icon: FileUp,
+      title: "Type Notes",
+      description: "Enter or paste your notes manually (recommended)",
+      action: () => navigate('/manual-entry'),
+      color: "bg-primary",
+    },
+    {
       icon: MessageSquare,
       title: "Ask Questions",
       description: "Get instant answers based on your uploaded notes",

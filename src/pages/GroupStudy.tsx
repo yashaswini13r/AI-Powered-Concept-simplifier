@@ -122,6 +122,10 @@ const GroupStudy = () => {
     if (!input.trim() || !selectedSession) return;
 
     setLoading(true);
+    const userMessage = input;
+    setInput("");
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+
     try {
       // Get all notes for this session
       const { data: sessionNotes } = await supabase
@@ -136,20 +140,34 @@ const GroupStudy = () => {
         .select('content')
         .in('id', noteIds);
 
-      const combinedContext = notesData?.map(n => n.content).join('\n\n') || '';
+      const combinedContext = notesData?.map(n => n.content).filter(c => c).join('\n\n') || '';
 
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: {
-          messages: [{ role: 'user', content: input }],
-          noteContext: combinedContext
+      // Use fetch for streaming instead of invoke
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: userMessage }],
+            noteContext: combinedContext
+          })
         }
-      });
+      );
 
-      if (error) throw error;
+      if (!response.ok) throw new Error('Failed to get response');
 
-      const reader = data.getReader();
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+      
       const decoder = new TextDecoder();
       let assistantMessage = '';
+
+      // Add empty assistant message that we'll update
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -168,28 +186,36 @@ const GroupStudy = () => {
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 assistantMessage += content;
+                // Update the last message in real-time
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1] = {
+                    role: 'assistant',
+                    content: assistantMessage
+                  };
+                  return newMessages;
+                });
               }
-            } catch (e) {}
+            } catch (e) {
+              // Ignore parsing errors
+            }
           }
         }
       }
-
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: input },
-        { role: 'assistant', content: assistantMessage }
-      ]);
-      setInput("");
     } catch (error: any) {
       toast({
         title: "Error sending message",
         description: error.message,
         variant: "destructive",
       });
+      // Remove the failed messages
+      setMessages(prev => prev.slice(0, -2));
+      setInput(userMessage);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background">

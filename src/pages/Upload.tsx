@@ -72,30 +72,42 @@ const Upload = () => {
     setExtractingText(true);
 
     try {
-      // Extract text from file
-      let extractedText = '';
-      try {
-        extractedText = await extractTextFromFile(file);
-        console.log('Text extracted successfully, length:', extractedText.length);
-      } catch (extractError) {
-        console.error('Text extraction error:', extractError);
-        toast({
-          title: "Warning",
-          description: "Could not extract text from file, but file will be uploaded",
-        });
-      }
-      
-      setExtractingText(false);
-
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
+      // Upload file first
       const { error: uploadError } = await supabase.storage
         .from('notes')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
+      // Extract text from uploaded file
+      let extractedText = '';
+      
+      if (file.type === 'text/plain') {
+        // For TXT files, extract directly
+        extractedText = await file.text();
+      } else {
+        // For other files, use the edge function
+        try {
+          const { data: textData, error: extractError } = await supabase.functions.invoke('extract-text', {
+            body: { filePath: fileName }
+          });
+
+          if (extractError) {
+            console.error('Text extraction error:', extractError);
+          } else {
+            extractedText = textData.text || '';
+          }
+        } catch (extractError) {
+          console.error('Text extraction failed:', extractError);
+        }
+      }
+      
+      setExtractingText(false);
+
+      // Save to database with extracted text
       const { error: dbError } = await supabase
         .from('notes')
         .insert([{
@@ -109,9 +121,13 @@ const Upload = () => {
 
       if (dbError) throw dbError;
 
+      const successMessage = extractedText 
+        ? "Your notes have been uploaded and text extracted successfully"
+        : "Your notes have been uploaded (text extraction pending)";
+
       toast({
         title: "Success!",
-        description: "Your notes have been uploaded and text extracted successfully",
+        description: successMessage,
       });
 
       navigate('/dashboard');
@@ -147,7 +163,7 @@ const Upload = () => {
               Upload Study Notes
             </CardTitle>
             <CardDescription>
-              Upload your notes in PDF, DOC, or TXT format
+              Upload your notes in PDF, DOC, or TXT format. <strong>Best results with TXT files</strong> - they extract text automatically for AI features.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
