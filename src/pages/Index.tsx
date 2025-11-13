@@ -53,9 +53,8 @@ const Index = () => {
                 </span>
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-                Study Smarter with{" "}
                 <span className="bg-gradient-primary bg-clip-text text-transparent">
-                  AI Assistance
+                  Smart Study Partner
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground">

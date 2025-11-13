@@ -93,13 +93,6 @@ const Dashboard = () => {
       color: "bg-primary",
     },
     {
-      icon: FileUp,
-      title: "Type Notes",
-      description: "Enter or paste your notes manually (recommended)",
-      action: () => navigate('/manual-entry'),
-      color: "bg-primary",
-    },
-    {
       icon: MessageSquare,
       title: "Ask Questions",
       description: "Get instant answers based on your uploaded notes",
@@ -155,7 +148,7 @@ const Dashboard = () => {
             <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Study AI</span>
+            <span className="text-xl font-bold">Smart Study Partner</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">

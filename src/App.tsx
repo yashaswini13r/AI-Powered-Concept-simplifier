@@ -8,7 +8,6 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Upload from "./pages/Upload";
-import ManualNoteEntry from "./pages/ManualNoteEntry";
 import Summarize from "./pages/Summarize";
 import Quiz from "./pages/Quiz";
 import GroupStudy from "./pages/GroupStudy";
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/upload" element={<Upload />} />
-          <Route path="/manual-entry" element={<ManualNoteEntry />} />
           <Route path="/summarize" element={<Summarize />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/group-study" element={<GroupStudy />} />

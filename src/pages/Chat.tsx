@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Send, BookOpen } from "lucide-react";
 import { Session, User } from "@supabase/supabase-js";
@@ -13,6 +14,13 @@ interface Message {
   content: string;
 }
 
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  subject: string;
+}
+
 const Chat = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -20,6 +28,8 @@ const Chat = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const navigate = useNavigate();
@@ -45,6 +55,7 @@ const Chat = () => {
         navigate('/auth');
       } else {
         createNewSession(session.user.id);
+        loadNotes(session.user.id);
       }
     });
 
@@ -57,6 +68,17 @@ const Chat = () => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const loadNotes = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('id, title, content, subject')
+      .eq('user_id', userId);
+
+    if (data) {
+      setNotes(data);
+    }
   };
 
   const createNewSession = async (userId: string) => {
@@ -87,6 +109,9 @@ const Chat = () => {
   const streamChat = async (userMessage: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
     
+    const selectedNote = notes.find(n => n.id === selectedNoteId);
+    const noteContext = selectedNote ? selectedNote.content : '';
+    
     const response = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
@@ -95,6 +120,7 @@ const Chat = () => {
       },
       body: JSON.stringify({ 
         messages: [...messages, { role: 'user', content: userMessage }],
+        noteContext,
       }),
     });
 
@@ -155,6 +181,15 @@ const Chat = () => {
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
+    
+    if (!selectedNoteId) {
+      toast({
+        title: "Select a note",
+        description: "Please select a note to ask questions about.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const userMessage = input.trim();
     setInput("");
@@ -193,6 +228,21 @@ const Chat = () => {
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
+        <div className="mb-4">
+          <Select value={selectedNoteId} onValueChange={setSelectedNoteId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a note to discuss" />
+            </SelectTrigger>
+            <SelectContent>
+              {notes.map((note) => (
+                <SelectItem key={note.id} value={note.id}>
+                  {note.title} - {note.subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.length === 0 && (
             <Card className="p-8 text-center bg-gradient-card">
@@ -201,7 +251,7 @@ const Chat = () => {
               </div>
               <h2 className="text-2xl font-bold mb-2">Start a Conversation</h2>
               <p className="text-muted-foreground">
-                Ask me anything about your study materials or any topic you're learning.
+                Select a note above and ask questions about your study materials.
               </p>
             </Card>
           )}
