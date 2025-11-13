@@ -82,27 +82,18 @@ const Upload = () => {
 
       if (uploadError) throw uploadError;
 
-      // Extract text from uploaded file
+      // Extract text from file using client-side extractor
       let extractedText = '';
       
-      if (file.type === 'text/plain') {
-        // For TXT files, extract directly
-        extractedText = await file.text();
-      } else {
-        // For other files, use the edge function
-        try {
-          const { data: textData, error: extractError } = await supabase.functions.invoke('extract-text', {
-            body: { filePath: fileName }
-          });
-
-          if (extractError) {
-            console.error('Text extraction error:', extractError);
-          } else {
-            extractedText = textData.text || '';
-          }
-        } catch (extractError) {
-          console.error('Text extraction failed:', extractError);
-        }
+      try {
+        extractedText = await extractTextFromFile(file);
+        console.log('Text extracted successfully, length:', extractedText.length);
+      } catch (extractError) {
+        console.error('Text extraction failed:', extractError);
+        toast({
+          title: "Text extraction issue",
+          description: "Couldn't extract text from file. You can still upload, but AI features may not work.",
+        });
       }
       
       setExtractingText(false);
@@ -163,7 +154,7 @@ const Upload = () => {
               Upload Study Notes
             </CardTitle>
             <CardDescription>
-              Upload your notes in PDF, DOC, or TXT format. <strong>Best results with TXT files</strong> - they extract text automatically for AI features.
+              Upload your notes in PDF, DOC, or TXT format. Text will be automatically extracted for AI features like summarization and quizzes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
