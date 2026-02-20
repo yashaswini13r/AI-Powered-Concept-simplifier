@@ -48,13 +48,13 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="inline-block">
-                <span className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                  AI-Powered Learning Platform
+                 <span className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                  AI-Powered Concept Simplifier
                 </span>
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight">
                 <span className="bg-gradient-primary bg-clip-text text-transparent">
-                  Smart Study Partner
+                  AI-Powered Concept Simplifier
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground">
