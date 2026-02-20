@@ -148,7 +148,7 @@ const Dashboard = () => {
             <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Smart Study Partner</span>
+            <span className="text-xl font-bold">AI-Powered Concept Simplifier</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
